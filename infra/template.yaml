@@ -1,0 +1,84 @@
+# Deployment shape for the platform (AWS SAM / CloudFormation).
+# The demo and CI run the same handler code against moto-mocked AWS instead of
+# deploying; this template documents what a real deployment provisions.
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Telemetry event platform: Kinesis ingestion, an immutable S3 event log,
+  and a projection function. Derived state is rebuildable from the log.
+
+Resources:
+  ReadingsStream:
+    Type: AWS::Kinesis::Stream
+    Properties:
+      Name: telemetry-readings
+      ShardCount: 2
+      RetentionPeriodHours: 168
+
+  EventLogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "telemetry-event-log-${AWS::AccountId}"
+      VersioningConfiguration:
+        Status: Enabled            # the log is append-only; versioning guards even against operator error
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  IngestDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: telemetry-ingest-dlq
+      MessageRetentionPeriod: 1209600
+
+  IngestFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: eventlog.ingest.handler
+      Runtime: python3.11
+      Timeout: 60
+      MemorySize: 256
+      Environment:
+        Variables:
+          EVENT_LOG_BUCKET: !Ref EventLogBucket
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Ref EventLogBucket
+      Events:
+        FromKinesis:
+          Type: Kinesis
+          Properties:
+            Stream: !GetAtt ReadingsStream.Arn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 100
+            BisectBatchOnFunctionError: true
+            DestinationConfig:
+              OnFailure:
+                Destination: !GetAtt IngestDLQ.Arn
+
+  ProjectionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: eventlog.projections.apply_from_log
+      Runtime: python3.11
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          EVENT_LOG_BUCKET: !Ref EventLogBucket
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref EventLogBucket
+      Events:
+        Nightly:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 hour)
+
+Outputs:
+  StreamName:
+    Value: !Ref ReadingsStream
+  EventLogBucket:
+    Value: !Ref EventLogBucket

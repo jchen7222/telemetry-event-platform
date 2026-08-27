@@ -1,0 +1,3 @@
+{"schema_version": 2, "event_id": "cfab538a7bfe445b", "source_id": "chem_gw", "facility_id": "CHM-1", "reading_ts": "2024-03-04 09:00:00", "value": 2410.0, "unit": "MJ", "quality_flag": "REVISED", "sent_at": "2024-03-05 06:00:00"}
+{"schema_version": 2, "event_id": "201377ee7d450948", "source_id": "chem_gw", "facility_id": "CHM-2", "reading_ts": "2024-03-04 09:00:00", "value": 2735.5, "unit": "MJ", "quality_flag": "REVISED", "sent_at": "2024-03-05 06:00:00"}
+{"schema_version": 2, "event_id": "16bf8043853178bc", "source_id": "chem_gw", "facility_id": "CHM-3", "reading_ts": "2024-03-04 10:00:00", "value": 3105.2, "unit": "MJ", "quality_flag": "REVISED", "sent_at": "2024-03-05 06:00:00"}

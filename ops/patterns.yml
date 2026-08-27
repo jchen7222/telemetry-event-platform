@@ -1,0 +1,40 @@
+# Root-cause pattern registry.
+# Quarantine reasons are matched against these patterns to give operations a
+# diagnosis and an action — the "map technical logs to historical root-cause
+# patterns" idea: the platform team encodes what each failure has meant before,
+# so other teams resolve their own incidents without a data-engineering ticket.
+patterns:
+  - match: "unparseable JSON"
+    pattern: Truncated or corrupted uplink packet
+    likely_cause: Gateway lost connectivity mid-send or firmware corrupted the buffer
+    action: Power-cycle the gateway and re-request the affected window
+
+  - match: "negative energy value"
+    pattern: Meter rollover / calibration fault
+    likely_cause: Register rollover or a failed calibration on the meter
+    action: Open a field-calibration ticket for the facility
+
+  - match: "unknown schema_version"
+    pattern: Gateway firmware ahead of platform
+    likely_cause: Site updated gateway firmware before the platform registered the version
+    action: Pin gateway firmware; register the new envelope version before rollout
+
+  - match: "missing required fields"
+    pattern: Partial packet
+    likely_cause: Payload truncated at the gateway or by the uplink
+    action: Check gateway uplink quality; re-request the window
+
+  - match: "unparseable timestamp"
+    pattern: Device clock fault
+    likely_cause: Gateway clock lost NTP sync
+    action: Force NTP resync; quarantined rows can be re-sent after correction
+
+  - match: "unknown unit"
+    pattern: Site configuration drift
+    likely_cause: Site template edited locally, unit label no longer canonical
+    action: Restore the site's configuration template
+
+  - match: "non-numeric value"
+    pattern: Sensor error string in numeric field
+    likely_cause: Sensor emitting ERR/NaN markers under fault
+    action: Schedule sensor replacement check

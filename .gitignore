@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+projections.duckdb
+ops_snapshot.json
+dashboard.html
+.pytest_cache/

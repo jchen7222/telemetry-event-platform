@@ -99,7 +99,7 @@ the immutable event log; nothing on this page requires a data-engineering ticket
 <p>Belief at any past moment is reproducible: as-of pivot for this run was
 <code>{html.escape(snap["as_of_pivot"])}</code> — see <code>eventlog.projections.as_of</code>.</p>
 """
-    with open(out_path, "w") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         f.write(page)
     return out_path
 
